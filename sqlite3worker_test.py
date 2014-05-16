@@ -31,8 +31,6 @@ import sqlite3
 import tempfile
 import unittest
 
-import mox
-
 import sqlite3worker
 
 
@@ -53,18 +51,15 @@ class StubQueue(Queue.Queue):
 class Sqlite3WorkerTests(unittest.TestCase):  # pylint:disable=R0904
     """Test out the sqlite3worker library."""
     def setUp(self):  # pylint:disable=C0103
-        self.stubs = mox.stubout.StubOutForTesting()
         self.tmp_file = tempfile.NamedTemporaryFile(
             suffix="pytest", prefix="sqlite").name
-        # Stop the thread from auto starting so we can call run() manually.
-        self.stubs.Set(sqlite3worker.threading.Thread, "start", lambda x: True)
-        self.sqlite3worker = sqlite3worker.Sqlite3Worker(self.tmp_file)
+        self.sqlite3worker = sqlite3worker.Sqlite3Worker(
+            self.tmp_file, auto_start=False)
         self.sqlite3worker.write_queue = StubQueue()
         self.sqlite3_conn = sqlite3.connect(self.tmp_file)
         self.sqlite3_cursor = self.sqlite3_conn.cursor()
 
     def tearDown(self):  # pylint:disable=C0103
-        self.stubs.UnsetAll()
         self.sqlite3_conn.close()
         os.unlink(self.tmp_file)
 
