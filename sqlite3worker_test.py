@@ -23,19 +23,22 @@
 
 __author__ = "Shawn Lee"
 __email__ = "shawnl@palantir.com"
+__license__ = "MIT"
 
-import mox
+import Queue
 import os
 import sqlite3
-import sqlite3worker
 import tempfile
 import unittest
-import Queue
+
+import mox
+
+import sqlite3worker
+
 
 class StubQueue(Queue.Queue):
     """Stub out Queue to prevent Queue.get from blocking."""
-    # TODO(shawnl): This is coupled too much to the implementation. Refactor to
-    # remove coupling.
+    # TODO(shawnl): This is coupled too much to the implementation.
     # Queue.Queue does not inherit from object so it's an old-style object.
     def __init__(self):
         Queue.Queue.__init__(self)
@@ -47,7 +50,7 @@ class StubQueue(Queue.Queue):
         return Queue.Queue.get(self, *args, **kwargs)
 
 
-class Sqlite3WorkerTests(unittest.TestCase):
+class Sqlite3WorkerTests(unittest.TestCase):  # pylint:disable=R0904
     """Test out the sqlite3worker library."""
     def setUp(self):  # pylint:disable=C0103
         self.stubs = mox.stubout.StubOutForTesting()
@@ -74,11 +77,13 @@ class Sqlite3WorkerTests(unittest.TestCase):
         self.sqlite3worker.execute(
             "INSERT into tester values (?, ?)", ("2010-01-01 13:00:00", "bow"))
         self.assertEqual(self.sqlite3worker.queue_size, 1)
-        self.assertEqual(self.sqlite3worker.execute("SELECT * from tester"), [])
+        self.assertEqual(
+            self.sqlite3worker.execute("SELECT * from tester"), [])
         self.sqlite3worker.execute(
             "INSERT into tester values (?, ?)", ("2011-02-02 14:14:14", "dog"))
         self.assertEqual(self.sqlite3worker.queue_size, 2)
-        self.assertEqual(self.sqlite3worker.execute("SELECT * from tester"), [])
+        self.assertEqual(
+            self.sqlite3worker.execute("SELECT * from tester"), [])
         # Raises Queue.Empty only because of the StubQueue class.  Will not
         # raise in production code.
         self.assertRaises(Queue.Empty, self.sqlite3worker.run)

@@ -23,11 +23,13 @@
 
 __author__ = "Shawn Lee"
 __email__ = "shawnl@palantir.com"
+__license__ = "MIT"
 
-import logging
 import Queue
+import logging
 import sqlite3
 import threading
+
 
 class Sqlite3Worker(threading.Thread):
     """Sqlite thread safe object.
@@ -43,22 +45,24 @@ class Sqlite3Worker(threading.Thread):
             "INSERT into tester values (?, ?)", ("2011-02-02 14:14:14", "dog"))
         sql_worker.execute("SELECT * from tester")
     """
-    def __init__(self, file_name, logger=None, max_queue_size=100):
+    def __init__(
+            self, file_name, max_queue_size=100, auto_start=True):
         """Automatically starts the thread.
 
         Args:
             file_name: The name of the file.
-            logger: A logging object or will just grab the local logger.
             max_queue_size: The max queries that will be queued.
+            auto_start: Set to false to call start() manually.
         """
-        self.logger = logger or logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
         threading.Thread.__init__(self)
         self.daemon = True
         self.sqlite3_conn = sqlite3.connect(file_name, check_same_thread=False)
         self.sqlite3_cursor = self.sqlite3_conn.cursor()
         self.write_queue = Queue.Queue(maxsize=max_queue_size)
         self.max_queue_size = max_queue_size
-        self.start()
+        if auto_start:
+            self.start()
 
     def run(self):
         """Thread loop.
@@ -79,7 +83,8 @@ class Sqlite3Worker(threading.Thread):
             execute_count += 1
             # Let the executes build up a little before commiting to disk to
             # speed things up.
-            if self.write_queue.empty() or execute_count == self.max_queue_size:
+            if (self.write_queue.empty() or
+                    execute_count == self.max_queue_size):
                 self.logger.debug("run: commit")
                 self.sqlite3_conn.commit()
                 execute_count = 0
