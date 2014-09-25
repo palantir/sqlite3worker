@@ -48,6 +48,7 @@ class Sqlite3Worker(threading.Thread):
         sql_worker.execute(
             "INSERT into tester values (?, ?)", ("2011-02-02 14:14:14", "dog"))
         sql_worker.execute("SELECT * from tester")
+        sql_worker.close()
     """
     def __init__(self, file_name, max_queue_size=100):
         """Automatically starts the thread.
