@@ -25,27 +25,12 @@ __author__ = "Shawn Lee"
 __email__ = "shawnl@palantir.com"
 __license__ = "MIT"
 
-import Queue
 import os
-import sqlite3
 import tempfile
+import time
 import unittest
 
 import sqlite3worker
-
-
-class StubQueue(Queue.Queue):
-    """Stub out Queue to prevent Queue.get from blocking."""
-    # TODO(shawnl): This is coupled too much to the implementation.
-    # Queue.Queue does not inherit from object so it's an old-style object.
-    def __init__(self):
-        Queue.Queue.__init__(self)
-        self.is_first = True
-
-    def get(self, *args, **kwargs):
-        """Add block=False as default to bypass blocking."""
-        kwargs["block"] = False
-        return Queue.Queue.get(self, *args, **kwargs)
 
 
 class Sqlite3WorkerTests(unittest.TestCase):  # pylint:disable=R0904
@@ -53,36 +38,45 @@ class Sqlite3WorkerTests(unittest.TestCase):  # pylint:disable=R0904
     def setUp(self):  # pylint:disable=C0103
         self.tmp_file = tempfile.NamedTemporaryFile(
             suffix="pytest", prefix="sqlite").name
-        self.sqlite3worker = sqlite3worker.Sqlite3Worker(
-            self.tmp_file, auto_start=False)
-        self.sqlite3worker.write_queue = StubQueue()
-        self.sqlite3_conn = sqlite3.connect(self.tmp_file)
-        self.sqlite3_cursor = self.sqlite3_conn.cursor()
+        self.sqlite3worker = sqlite3worker.Sqlite3Worker(self.tmp_file)
+        # Create sql db.
+        self.sqlite3worker.execute(
+            "CREATE TABLE tester (timestamp DATETIME, uuid TEXT)")
 
     def tearDown(self):  # pylint:disable=C0103
-        self.sqlite3_conn.close()
+        self.sqlite3worker.close()
         os.unlink(self.tmp_file)
 
-    def test_execute_insert(self):
-        """Insert and Select."""
-        # Create sql db.
-        self.sqlite3_cursor.execute(
-            "CREATE TABLE tester (timestamp DATETIME, uuid TEXT)")
+    def test_bad_select(self):
+        """Test a bad select query."""
+        query = "select THIS IS BAD SQL"
+        self.assertEqual(
+            self.sqlite3worker.execute(query),
+            "Query returned error: %s" % query)
+
+    def test_bad_insert(self):
+        """Test a bad insert query."""
+        query = "insert THIS IS BAD SQL"
+        self.sqlite3worker.execute(query)
+        # Give it one second to clear the queue.
+        if self.sqlite3worker.queue_size != 0:
+            time.sleep(1)
         self.assertEqual(self.sqlite3worker.queue_size, 0)
+        self.assertEqual(
+            self.sqlite3worker.execute("SELECT * from tester"), [])
+
+    def test_valid_insert(self):
+        """Test a valid insert and select statement."""
         self.sqlite3worker.execute(
             "INSERT into tester values (?, ?)", ("2010-01-01 13:00:00", "bow"))
-        self.assertEqual(self.sqlite3worker.queue_size, 1)
         self.assertEqual(
-            self.sqlite3worker.execute("SELECT * from tester"), [])
+            self.sqlite3worker.execute("SELECT * from tester"),
+            [("2010-01-01 13:00:00", "bow")])
         self.sqlite3worker.execute(
             "INSERT into tester values (?, ?)", ("2011-02-02 14:14:14", "dog"))
-        self.assertEqual(self.sqlite3worker.queue_size, 2)
-        self.assertEqual(
-            self.sqlite3worker.execute("SELECT * from tester"), [])
-        # Raises Queue.Empty only because of the StubQueue class.  Will not
-        # raise in production code.
-        self.assertRaises(Queue.Empty, self.sqlite3worker.run)
-        self.assertEqual(self.sqlite3worker.queue_size, 0)
+        # Give it one second to clear the queue.
+        if self.sqlite3worker.queue_size != 0:
+            time.sleep(1)
         self.assertEqual(
             self.sqlite3worker.execute("SELECT * from tester"),
             [("2010-01-01 13:00:00", "bow"), ("2011-02-02 14:14:14", "dog")])
