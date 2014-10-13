@@ -52,7 +52,9 @@ class Sqlite3WorkerTests(unittest.TestCase):  # pylint:disable=R0904
         query = "select THIS IS BAD SQL"
         self.assertEqual(
             self.sqlite3worker.execute(query),
-            "Query returned error: %s" % query)
+            (
+                "Query returned error: select THIS IS BAD SQL: "
+                "[]: no such column: THIS"))
 
     def test_bad_insert(self):
         """Test a bad insert query."""

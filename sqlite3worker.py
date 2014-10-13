@@ -120,15 +120,19 @@ class Sqlite3Worker(threading.Thread):
             try:
                 self.sqlite3_cursor.execute(query, values)
                 self.results[token] = self.sqlite3_cursor.fetchall()
-            except sqlite3.Error:
+            except sqlite3.Error as err:
                 # Put the error into the output queue since a response
                 # is required.
-                self.results[token] = "Query returned error: %s" % query
+                self.results[token] = (
+                    "Query returned error: %s: %s: %s" % (query, values, err))
+                LOGGER.error(
+                    "Query returned error: %s: %s: %s", query, values, err)
         else:
             try:
                 self.sqlite3_cursor.execute(query, values)
-            except sqlite3.Error:
-                LOGGER.error("Query returned error: %s", query)
+            except sqlite3.Error as err:
+                LOGGER.error(
+                    "Query returned error: %s: %s: %s", query, values, err)
 
     def close(self):
         """Close down the thread and close the sqlite3 database file."""
