@@ -26,7 +26,10 @@ __email__ = "shawnl@palantir.com"
 __license__ = "MIT"
 
 import logging
-import Queue
+try:
+    import queue as Queue # module re-named in Python 3
+except ImportError:
+    import Queue
 import sqlite3
 import threading
 import time
