@@ -26,7 +26,7 @@ sql_worker.execute("INSERT into tester values (?, ?)", ("2011-02-02 14:14:14", "
 
 results = sql_worker.execute("SELECT * from tester")
 for timestamp, uuid in results:
-    print timestamp, uuid
+    print(timestamp, uuid)
 
 sql_worker.close()
 ```
