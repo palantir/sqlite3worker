@@ -25,7 +25,7 @@ __author__ = "Shawn Lee"
 __email__ = "shawnl@palantir.com"
 __license__ = "MIT"
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name="sqlite3worker",
@@ -34,4 +34,5 @@ setup(
     author="Shawn Lee",
     author_email="shawnl@palantir.com",
     packages=["sqlite3worker"],
-    package_dir={"sqlite3worker": "."})
+    package_dir={"sqlite3worker": "."},
+    test_suite="sqlite3worker_test")
