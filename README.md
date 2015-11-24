@@ -11,8 +11,24 @@ created to address this by bringing the responsibility of managing the threads
 to the python layer and is agnostic to the server setup of sqlite3.
 
 ## Install
+Installation is via the usual ``setup.py`` method:
+
 ```sh
 sudo python setup.py install
+```
+
+Alternatively one can use ``pip`` to install directly from the git repository
+without having to clone first:
+
+```sh
+sudo pip install git+https://github.com/palantir/sqlite3worker#egg=sqlite3worker
+```
+
+One may also use ``pip`` to install on a per-user basis without requiring
+super-user permissions:
+
+```sh
+pip install --user git+https://github.com/palantir/sqlite3worker#egg=sqlite3worker
 ```
 
 ## Example
