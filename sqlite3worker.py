@@ -59,7 +59,6 @@ class Sqlite3Worker(threading.Thread):
         Args:
             file_name: The name of the file.
             max_queue_size: The max queries that will be queued.
-            auto_start: Set to false to call start() manually.
         """
         threading.Thread.__init__(self)
         self.daemon = True
